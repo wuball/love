@@ -1,0 +1,160 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <title>Encryption</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta property="og:title" content="" />
+  <meta property="og:type" content="" />
+  <meta property="og:url" content="" />
+  <meta property="og:image" content="" />
+
+
+  <link href="../bootstrap.min.css" rel="stylesheet">
+
+  <meta name="theme-color" content="#fafafa">
+
+  <style>
+    textarea {
+      overflow: auto;
+    }
+
+    textarea::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+
+<body class="container py-3">
+  <div class="row">
+    <div class="col-md-12 mb-4">
+      <div class="text-bg-danger p-3">
+        <p>确保密码只存在记忆中,不在任何地方书写密码</p>
+        禁止使用国产浏览器和国产输入法,会被监听输入,特别是密码,请使用 Chrome 或 Safari
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 mb-4">
+      <label for="encrypted-text" class="form-label">密文</label>
+      <textarea class="form-control" id="encrypted-text" rows="3" placeholder="输入密文" autocomplete="off"></textarea>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 mb-4">
+      <label for="password" class="form-label">密码</label>
+      <input type="password" name="disautocomplete" style="display: none;">
+      <input type="password" class="form-control" id="password" placeholder="输入密码" autocomplete="new-password">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 mb-4">
+      <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+        <button id="decrypt-button" type="button" class="btn btn-danger">解密</button>
+        <button id="encrypt-button" type="button" class="btn btn-success">加密</button>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 mb-4">
+      <label for="decrypted-text" class="form-label">明文</label>
+      <textarea class="form-control" id="decrypted-text" rows="120" placeholder="输入明文" autocomplete="off"></textarea>
+    </div>
+  </div>
+
+
+
+  <script src="../jquery-3.7.1.min.js"></script>
+  <script src="../crypto-js.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#encrypt-button').on('click', function () {
+        try {
+          const decryptedText = $('#decrypted-text').val();
+          const password = $('#password').val();
+
+          if (decryptedText === "" || password === "") {
+            alert("Please enter decrypted and password.");
+            return;
+          }
+
+          const salt = CryptoJS.lib.WordArray.random(128 / 8);
+          const iterations = 50000;
+          const keySize = 256 / 32;
+
+          const key = CryptoJS.PBKDF2(password, salt, {
+            keySize: keySize,
+            iterations: iterations,
+          });
+
+          const iv = CryptoJS.lib.WordArray.random(128 / 8);
+          const encrypted = CryptoJS.AES.encrypt(decryptedText, key, { iv: iv });
+
+          // Concatenate salt, IV, and ciphertext
+          const encryptedData = salt.concat(iv).concat(encrypted.ciphertext);
+          const encryptedText = CryptoJS.enc.Base64.stringify(encryptedData);
+
+          $('#encrypted-text').val(encryptedText);
+          $('#decrypted-text').val("");
+
+        } catch (error) {
+          alert("error");
+        }
+      });
+
+      $('#decrypt-button').on('click', function () {
+        try {
+          const encryptedText = $('#encrypted-text').val();
+          const password = $('#password').val();
+
+          if (encryptedText === "" || password === "") {
+            alert("Please enter encrypted text and password.");
+            return;
+          }
+
+          const iterations = 50000;
+          const keySize = 256 / 32;
+
+          const encryptedData = CryptoJS.enc.Base64.parse(encryptedText);
+
+          // Extract salt and IV
+          const salt = CryptoJS.lib.WordArray.create(encryptedData.words.slice(0, 128 / 32));
+          const iv = CryptoJS.lib.WordArray.create(encryptedData.words.slice(128 / 32, 256 / 32));
+
+          const key = CryptoJS.PBKDF2(password, salt, {
+            keySize: keySize,
+            iterations: iterations,
+          });
+
+          // Extract ciphertext
+          const ciphertext = CryptoJS.lib.WordArray.create(encryptedData.words.slice(256 / 32));
+
+          const decrypted = CryptoJS.AES.decrypt({ ciphertext: ciphertext }, key, { iv: iv });
+          const decryptedText = CryptoJS.enc.Utf8.stringify(decrypted);
+
+          $('#decrypted-text').val(decryptedText);
+          $('#encrypted-text').val("");
+
+          $("#decrypted-text").trigger("input");
+
+        } catch (error) {
+          alert("error");
+        }
+      });
+    });
+  </script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-890HP5PW85"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-890HP5PW85');
+  </script>
+</body>
+
+</html>
